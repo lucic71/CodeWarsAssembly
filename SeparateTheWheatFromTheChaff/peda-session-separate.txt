@@ -1,3 +1,0 @@
-break wheat_from_chaff
-break *0x400b97
-

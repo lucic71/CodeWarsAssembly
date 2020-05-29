@@ -11,6 +11,12 @@ struc complex
 
 endstruc
 
+section .data
+
+    complex_struc_sz dd 8
+
+section .text
+
 fft:
 
     push rbp
@@ -41,12 +47,16 @@ fft:
     ; Their sizes will be size / 2.
 
     shr rax, 1
+    imul rax, [complex_struc_sz]
+
     mov rdi, rax
     call malloc
     mov [rbp - 0x08], rax
 
     mov rax, [rbp - 0x20]
     shr rax, 1
+    imul rax, [complex_struc_sz]
+
     mov rdi, rax
     call malloc
     mov [rbp - 0x10], rax
@@ -62,22 +72,45 @@ fft:
     ;  from position 2 * RCX + 1 and put it in the second array on position i.
     ;  The source of extraction is the first argument of fft.
 
-    ; Move size / 2 in RDX, put 0 in RCX, put source array in RSI and the first
-    ; destination array in RDI. After we load the first element in the first
-    ; array, RDI will contain the second array to load the element destinated
-    ; to it.
+    ; Move size in RDX, put 0 in RCX, put source array in RSI.
+    ;
+    ; We will load elements from source array and put them in the first and the
+    ; second array in the following way:
+    ;
+    ;   - R8 and R9 will contain the current write pointer where we can write new
+    ;       data in the arrays
+    ;
+    ;   - load data from source array
+    ;   - put write pointer from R8 in RDI and write to that pointer
+    ;   - update write pointer by writing the new value in RDI to R8
+    ;
+    ;   - load data from source array
+    ;   - put write pointer from R9 in RDI and write to that pointer
+    ;   - update write pointer by writing the new value in RDI to R9
 
     mov rdx, [rbp - 0x20]
-    shr rdx, 1
 
     xor rcx, rcx
 
     mov rsi, [rbp - 0x18]
-    mov rdi, [rbp - 0x08]
+    mov rsi, [rsi]
+
+    mov r8, [rbp - 0x08]
+    mov r9, [rbp - 0x10]
 
 COPY_INDICES:
 
-    inc rcx
+    lodsq
+    mov rdi, r8
+    stosq
+    mov r8, rdi
+
+    lodsq
+    mov rdi, r9
+    stosq
+    mov r9, rdi
+
+    add rcx, 2 
 
     cmp rcx, rdx
     jnz COPY_INDICES

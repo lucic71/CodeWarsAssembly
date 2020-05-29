@@ -39,10 +39,10 @@ int main() {
 
     struct complex *polynomial = malloc(TEST_SIZE * sizeof(struct complex));
 
-    polynomial[0] = (struct complex) {1, 0};
-    polynomial[1] = (struct complex) {1, 1};
-    polynomial[2] = (struct complex) {0, 1};
-    polynomial[4] = (struct complex) {0, 0};
+    polynomial[0] = (struct complex) {2, 3};
+    polynomial[1] = (struct complex) {4, 5};
+    polynomial[2] = (struct complex) {6, 7};
+    polynomial[4] = (struct complex) {8, 9};
 
     fft(&polynomial, TEST_SIZE);
 

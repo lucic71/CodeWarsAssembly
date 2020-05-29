@@ -1,0 +1,5 @@
+global fft
+
+fft:
+    ret
+

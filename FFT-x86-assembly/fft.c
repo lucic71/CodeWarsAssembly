@@ -1,19 +1,23 @@
 #include <stdlib.h>
 
-#define TEST_SIZE 3
+#define TEST_SIZE 4
 
 /*
  * Structure to represent a complex number. I prefer to define my own
  * simple struct instead of using complex.h because I'm lazy.
  *
+ * I applied __attribute__((packed)) to make sure that the compiler does
+ * not add extra padding, because I want it to have the same dimension
+ * with the structure inside the asm file.
+ *
  */
 
 struct complex {
 
-    int a;
-    int b;
+    int real;
+    int imag;
 
-};
+}__attribute__((packed));
 
 /*
  * Arguments
@@ -22,7 +26,14 @@ struct complex {
  *
  */
 
-extern void fft(struct complex **polynomial);
+extern void fft(struct complex **polynomial, size_t size);
+
+/*
+ * Do not forget that the size of polynomial must be a power of 2.
+ * So you must write a wrapper that will add some padding if the
+ * size is not correct.
+ *
+ */
 
 int main() {
 
@@ -31,8 +42,9 @@ int main() {
     polynomial[0] = (struct complex) {1, 0};
     polynomial[1] = (struct complex) {1, 1};
     polynomial[2] = (struct complex) {0, 1};
+    polynomial[4] = (struct complex) {0, 0};
 
-    fft(&polynomial);
+    fft(&polynomial, TEST_SIZE);
 
     free(polynomial);
     return 0;

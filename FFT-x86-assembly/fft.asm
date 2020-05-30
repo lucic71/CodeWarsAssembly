@@ -6,14 +6,24 @@ global fft
 
 struc complex
 
-    .real resd 1
-    .imag resd 1
+    real resd 1
+    imag resd 1
 
 endstruc
+
+    ; Data section variables:
+    ;
+    ;   - complex_struct_sz, size of a struc complex data type
+    ;   - w_root, first complex root of unity: 1 + 0i
 
 section .data
 
     complex_struc_sz dd 8
+
+    w_root istruc complex
+        at real, dd 1
+        at imag, dd 0
+    iend
 
 section .text
 

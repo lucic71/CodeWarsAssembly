@@ -25,10 +25,11 @@ fft:
     ; Local variables:
     ;   0x08 = pointer to a heap array containing even indices of poly
     ;   0x10 = pointer to a heap arary containing odd  incides of poly
-    ;   0x18 = saves locally the first  argument of fft
-    ;   0x20 = saves locally the second argument of fft
+    ;   0x18 = saves locally the first  argument of fft - polynomial
+    ;   0x20 = saves locally the second argument of fft - size
+    ;   0x28 = size / 2
 
-    sub rsp, 0x20
+    sub rsp, 0x28
 
     ; Save first argument of fft because we will work with the register
     ; and don't want to lose the pointer.
@@ -43,20 +44,23 @@ fft:
     cmp rax, 1
     jz FFT_RET
 
-    ; Create the heap arrays that will contain the even and odd indices.
-    ; Their sizes will be size / 2.
+    ; Save size / 2 in local_0x28 because we will use it multiple times during
+    ; this subroutine.
 
     shr rax, 1
-    imul rax, [complex_struc_sz]
+    mov [rbp - 0x28], rax
 
+    ; Create the heap arrays that will contain the even and odd indices.
+    ; Their sizes will be (size / 2) * sizeof (struc complex)
+
+    imul rax, [complex_struc_sz]
     mov rdi, rax
     call malloc
     mov [rbp - 0x08], rax
 
-    mov rax, [rbp - 0x20]
-    shr rax, 1
-    imul rax, [complex_struc_sz]
+    mov rax, [rbp - 0x28]
 
+    imul rax, [complex_struc_sz]
     mov rdi, rax
     call malloc
     mov [rbp - 0x10], rax
@@ -114,6 +118,48 @@ COPY_INDICES:
 
     cmp rcx, rdx
     jnz COPY_INDICES
+
+DIVIDE_AND_CONQUER:
+
+    ; The new calls to fft will make changes to the first argument
+    ; because we send a pointer to the array of struc complex.
+
+    lea rdi, [rbp - 0x08]
+    mov rsi, [rbp - 0x28]
+    call fft
+
+    lea rdi, [rbp - 0x10]
+    mov rsi, [rbp - 0x28]
+    call fft
+
+ANGLE:
+
+    ; Compute the angle, it is equal to 2 * pi / n. We will first
+    ; push pi and 2 on the stack and multiply them. Then we push
+    ; 1 and size and divide them, the result wil be multiplied with
+    ; 2 * pi.
+    ;
+    ; Note: We could also save 2 * pi in rodata to be more elegant.
+
+    ; Multiply pi and 2.
+
+    fldpi
+
+    push qword 2
+    fild qword [rsp]
+    add rsp, 0x08
+
+    fmulp
+
+    ; Divide 1 and size.
+
+    fld1
+    fild qword [rbp - 0x20]
+    fdivp
+
+    ; Multiply (2 * pi) and (1 / size)
+
+    fmulp
 
 
 FFT_RET:
